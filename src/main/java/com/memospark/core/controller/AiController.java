@@ -18,12 +18,19 @@ public class AiController {
 
     public record HintRequest(String problemDescription, String userCode, int level) {}
     public record GenerateCardsRequest(String topic, int count, String language) {}
+    public record GradeRequest(String question, String referenceAnswer, String userAnswer) {}
 
     @PostMapping("/hint")
     public Map<String, String> getHint(@RequestBody HintRequest req,
                                         @AuthenticationPrincipal UserDetails userDetails) {
         String hint = aiService.generateHint(req.problemDescription(), req.userCode(), req.level());
         return Map.of("hint", hint);
+    }
+
+    @PostMapping("/grade")
+    public Map<String, Object> gradeAnswer(@RequestBody GradeRequest req,
+                                            @AuthenticationPrincipal UserDetails userDetails) {
+        return aiService.gradeAnswer(req.question(), req.referenceAnswer(), req.userAnswer());
     }
 
     @PostMapping("/generate-cards")

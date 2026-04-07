@@ -106,6 +106,16 @@ const i18n = {
     addProblem: 'Add Problem',
     editProblem: 'Edit Problem',
     hint: 'Hint',
+    answerPlaceholder: 'Type your answer here...',
+    skipToFlip: 'Skip, just flip',
+    acceptGrade: 'Accept & Continue',
+    overrideGrade: 'Override manually',
+    aiGrading: 'AI grading...',
+    aiGradeA: 'Excellent!',
+    aiGradeB: 'Good',
+    aiGradeC: 'Acceptable',
+    aiGradeD: 'Needs work',
+    aiGradeE: 'Try again',
     aiHint: 'AI Hint',
     aiHintLoading: 'Thinking...',
     aiHintLevel1: 'Give me a direction',
@@ -293,6 +303,16 @@ const i18n = {
     addProblem: '添加题目',
     editProblem: '编辑题目',
     hint: '提示',
+    answerPlaceholder: '输入你的答案...',
+    skipToFlip: '跳过，直接翻牌',
+    acceptGrade: '接受评分，继续',
+    overrideGrade: '手动评分',
+    aiGrading: 'AI 评分中...',
+    aiGradeA: '优秀！',
+    aiGradeB: '良好',
+    aiGradeC: '及格',
+    aiGradeD: '需要加强',
+    aiGradeE: '重来',
     aiHint: 'AI 提示',
     aiHintLoading: '思考中...',
     aiHintLevel1: '给个方向',
@@ -959,6 +979,14 @@ function showNextCard() {
   document.getElementById('card-back-text').innerHTML = renderMarkdown(tCardBack(card.front, card.back));
   document.getElementById('review-controls').classList.remove('visible');
   document.getElementById('flip-hint').style.display = '';
+
+  // Reset answer input area
+  document.getElementById('answer-input-area').style.display = '';
+  document.getElementById('user-answer-input').value = '';
+  document.getElementById('ai-grade-result').style.display = 'none';
+  document.getElementById('ai-grade-btn').disabled = false;
+  document.getElementById('ai-grade-btn').textContent = '🤖 AI Grade';
+  state._aiGradeQuality = null;
 }
 
 function flipCard() {
@@ -968,7 +996,68 @@ function flipCard() {
   if (state.flipped) {
     document.getElementById('review-controls').classList.add('visible');
     document.getElementById('flip-hint').style.display = 'none';
+    document.getElementById('answer-input-area').style.display = 'none';
+    document.getElementById('ai-grade-result').style.display = 'none';
   }
+}
+
+async function aiGradeAnswer() {
+  const card = state.reviewQueue[state.reviewIndex];
+  if (!card) return;
+  const userAnswer = document.getElementById('user-answer-input').value.trim();
+  if (!userAnswer) { showToast(t('answerPlaceholder')); return; }
+
+  const btn = document.getElementById('ai-grade-btn');
+  btn.disabled = true;
+  btn.textContent = t('aiGrading');
+
+  try {
+    const result = await apiFetch('/ai/grade', {
+      method: 'POST',
+      body: JSON.stringify({
+        question: card.front,
+        referenceAnswer: card.back,
+        userAnswer: userAnswer
+      })
+    });
+
+    const grade = result.grade || 'C';
+    const quality = parseInt(result.quality) || 3;
+    const feedback = result.feedback || '';
+
+    state._aiGradeQuality = quality;
+
+    // Show grade result
+    document.getElementById('answer-input-area').style.display = 'none';
+    const resultEl = document.getElementById('ai-grade-result');
+    resultEl.style.display = '';
+
+    const gradeLabels = { A: t('aiGradeA'), B: t('aiGradeB'), C: t('aiGradeC'), D: t('aiGradeD'), E: t('aiGradeE') };
+    document.getElementById('ai-grade-badge').innerHTML = `<span class="grade-${grade}">${grade}</span> <span style="font-size:1rem">${gradeLabels[grade] || ''}</span>`;
+    document.getElementById('ai-grade-feedback').textContent = feedback;
+
+    // Also flip to show the correct answer
+    if (!state.flipped) {
+      state.flipped = true;
+      document.getElementById('flip-card').classList.add('flipped');
+      document.getElementById('flip-hint').style.display = 'none';
+    }
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = '🤖 AI Grade';
+    showToast(t('error') + ': ' + e.message);
+  }
+}
+
+function acceptAiGrade() {
+  const quality = state._aiGradeQuality != null ? state._aiGradeQuality : 3;
+  document.getElementById('ai-grade-result').style.display = 'none';
+  submitReview(quality);
+}
+
+function overrideGrade() {
+  document.getElementById('ai-grade-result').style.display = 'none';
+  document.getElementById('review-controls').classList.add('visible');
 }
 
 async function submitReview(quality) {

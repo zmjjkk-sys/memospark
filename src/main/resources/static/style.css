@@ -230,6 +230,47 @@ main {
 }
 .admin-deck-row:hover .admin-deck-actions { opacity: 1; }
 
+/* ─── Answer Input + AI Grade ──────────────────────────── */
+.user-answer-input {
+  width: 100%;
+  padding: .6rem .8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: .9rem;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  background: var(--surface);
+  color: var(--text);
+}
+.user-answer-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+}
+.ai-grade-result {
+  text-align: center;
+  padding: 1rem;
+  margin-top: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.ai-grade-badge {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: .5rem;
+}
+.ai-grade-feedback {
+  font-size: .9rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.grade-A { color: #3b82f6; }
+.grade-B { color: #22c55e; }
+.grade-C { color: #f97316; }
+.grade-D { color: #ef4444; }
+.grade-E { color: #ef4444; }
+
 /* ─── Hint Box ─────────────────────────────────────────── */
 .hint-box {
   margin-top: .5rem;

@@ -34,6 +34,46 @@ public class AiService {
             .build();
 
     /**
+     * Grade a user's answer against the question and reference answer.
+     * Returns JSON: {"grade":"A/B/C/D/E","quality":5/4/3/2/0,"feedback":"..."}
+     */
+    public Map<String, Object> gradeAnswer(String question, String referenceAnswer, String userAnswer) {
+        String prompt = """
+                You are a strict but fair teacher grading a student's flashcard answer.
+
+                Question: %s
+
+                Reference Answer: %s
+
+                Student's Answer: %s
+
+                Grade the student's answer from A to E:
+                - A: Excellent, covers all key points accurately
+                - B: Good, mostly correct with minor omissions
+                - C: Acceptable, knows the general idea but missing important details
+                - D: Poor, significant errors or very incomplete
+                - E: Wrong or no meaningful answer
+
+                Reply in the same language as the question. Return ONLY JSON, no markdown:
+                {"grade":"A","quality":5,"feedback":"brief explanation of the grade"}
+
+                Mapping: A→quality 5, B→quality 4, C→quality 3, D→quality 2, E→quality 0
+                """.formatted(question, referenceAnswer, userAnswer);
+
+        String response = chat(prompt);
+        String json = response;
+        if (json.contains("{")) {
+            json = json.substring(json.indexOf("{"), json.lastIndexOf("}") + 1);
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {});
+        } catch (Exception e) {
+            log.error("Failed to parse AI grade response: {}", response, e);
+            return Map.of("grade", "C", "quality", 3, "feedback", response);
+        }
+    }
+
+    /**
      * Get a progressive hint for a coding problem.
      * level: 1=general direction, 2=approach detail, 3=pseudocode
      */

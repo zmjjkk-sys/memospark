@@ -13,5 +13,10 @@ public record CodeProblemDto(
         String pythonDriverCode,
         String testCasesJson,
         String tags,
-        boolean accepted
+        String category,
+        boolean accepted,
+        String bookmarkType,
+        boolean starred,
+        int failCount,
+        int attemptCount
 ) {}

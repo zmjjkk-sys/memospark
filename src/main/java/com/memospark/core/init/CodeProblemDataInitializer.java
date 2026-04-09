@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -25,12 +26,21 @@ public class CodeProblemDataInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         List<String[]> problems = CodeProblemData.problems();
         int inserted = 0;
+        int updated = 0;
 
         for (String[] p : problems) {
             int problemNumber = Integer.parseInt(p[0]);
+            String category = p.length > 10 ? p[10] : null;
 
-            // Idempotent: skip if already exists
-            if (codeProblemRepository.findByProblemNumber(problemNumber).isPresent()) {
+            Optional<CodeProblem> existing = codeProblemRepository.findByProblemNumber(problemNumber);
+            if (existing.isPresent()) {
+                // Backfill category if missing
+                CodeProblem ep = existing.get();
+                if (category != null && (ep.getCategory() == null || ep.getCategory().isBlank())) {
+                    ep.setCategory(category);
+                    codeProblemRepository.save(ep);
+                    updated++;
+                }
                 continue;
             }
 
@@ -46,12 +56,13 @@ public class CodeProblemDataInitializer implements ApplicationRunner {
                     p[8],  // testCasesJson
                     p[9]   // tags
             );
+            problem.setCategory(category);
             codeProblemRepository.save(problem);
             inserted++;
         }
 
-        if (inserted > 0) {
-            log.info("Initialized {} code problems", inserted);
+        if (inserted > 0 || updated > 0) {
+            log.info("Code problems: {} inserted, {} updated (category backfill)", inserted, updated);
         }
     }
 }

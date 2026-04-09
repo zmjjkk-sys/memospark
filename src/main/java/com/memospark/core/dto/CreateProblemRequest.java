@@ -11,5 +11,6 @@ public record CreateProblemRequest(
         String javaDriverCode,
         String pythonDriverCode,
         String testCasesJson,
-        String tags
+        String tags,
+        String category
 ) {}

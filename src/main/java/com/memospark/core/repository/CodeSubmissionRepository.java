@@ -2,6 +2,7 @@ package com.memospark.core.repository;
 
 import com.memospark.core.domain.CodeSubmission;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 
@@ -16,4 +17,9 @@ public interface CodeSubmissionRepository extends JpaRepository<CodeSubmission, 
     boolean existsByProblemIdAndUserIdAndStatus(Long problemId, Long userId, String status);
 
     void deleteByProblemId(Long problemId);
+
+    @Query("SELECT s.problem.id, COUNT(s) FROM CodeSubmission s WHERE s.user.id = :userId AND s.status <> 'ACCEPTED' GROUP BY s.problem.id")
+    List<Object[]> countFailsByUser(Long userId);
+
+    int countByProblemIdAndUserId(Long problemId, Long userId);
 }

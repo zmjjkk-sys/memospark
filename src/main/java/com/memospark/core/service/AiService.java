@@ -105,6 +105,33 @@ public class AiService {
     }
 
     /**
+     * Analyze why user's code got TLE or Runtime Error.
+     * Returns optimization suggestions without giving complete solution code.
+     */
+    public String analyzeTLE(String problemDescription, String userCode, String language) {
+        String prompt = """
+                You are a coding tutor. A student submitted code that got Time Limit Exceeded (TLE) or Runtime Error.
+
+                Problem:
+                %s
+
+                Student's code (%s):
+                %s
+
+                Analyze the code and provide:
+                1. The time complexity of their current approach
+                2. Why it's too slow or causes an error
+                3. What optimization approach they should consider (without giving complete code)
+                4. The target time complexity they should aim for
+
+                Reply in the same language as the problem description. Be concise and educational.
+                Do NOT provide the complete solution code, only guide the student.
+                """.formatted(problemDescription, language, userCode);
+
+        return chat(prompt);
+    }
+
+    /**
      * Generate flashcards for a given topic.
      */
     public List<Map<String, String>> generateCards(String topic, int count, String language) {
@@ -134,6 +161,28 @@ public class AiService {
             log.error("Failed to parse AI card response: {}", response, e);
             throw new RuntimeException("AI returned invalid card format");
         }
+    }
+
+    /**
+     * Analyze user's weakness patterns based on wrong problem data.
+     */
+    public String analyzeWeakness(String summary) {
+        String prompt = """
+                You are a coding tutor analyzing a student's weakness patterns.
+
+                Here is a summary of their wrong problems:
+                %s
+
+                Based on this data, provide:
+                1. The student's main weak areas
+                2. Why these areas might be challenging
+                3. Specific study recommendations (which topics to review, what type of practice to do)
+                4. A suggested study order
+
+                Reply in the same language as the summary. Be concise and actionable.
+                """.formatted(summary);
+
+        return chat(prompt);
     }
 
     private String chat(String userMessage) {

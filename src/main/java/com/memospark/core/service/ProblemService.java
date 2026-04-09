@@ -2,21 +2,21 @@ package com.memospark.core.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.memospark.core.domain.BookmarkType;
 import com.memospark.core.domain.CodeProblem;
 import com.memospark.core.domain.CodeSubmission;
+import com.memospark.core.domain.ProblemNote;
 import com.memospark.core.domain.User;
 import com.memospark.core.dto.*;
 import com.memospark.core.repository.CodeProblemRepository;
 import com.memospark.core.repository.CodeSubmissionRepository;
+import com.memospark.core.repository.ProblemNoteRepository;
 import com.memospark.core.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -24,20 +24,52 @@ public class ProblemService {
 
     private final CodeProblemRepository problemRepository;
     private final CodeSubmissionRepository submissionRepository;
+    private final ProblemNoteRepository noteRepository;
     private final UserRepository userRepository;
     private final JudgeService judgeService;
     private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public List<CodeProblemDto> getAllProblems(Long userId) {
+        // Batch-fetch all notes and fail counts to avoid N+1
+        Map<Long, ProblemNote> noteMap = Map.of();
+        Map<Long, Integer> failMap = Map.of();
+        if (userId != null) {
+            noteMap = noteRepository.findByUserIdOrderByUpdatedAtDesc(userId).stream()
+                    .collect(java.util.stream.Collectors.toMap(n -> n.getProblem().getId(), n -> n, (a, b) -> a));
+            failMap = new HashMap<>();
+            for (Object[] row : submissionRepository.countFailsByUser(userId)) {
+                failMap.put((Long) row[0], ((Long) row[1]).intValue());
+            }
+        }
+        final Map<Long, ProblemNote> notes = noteMap;
+        final Map<Long, Integer> fails = failMap;
         return problemRepository.findAllByOrderByProblemNumberAsc()
-                .stream().map(p -> toDto(p, userId)).toList();
+                .stream().map(p -> {
+                    ProblemNote note = notes.get(p.getId());
+                    String bm = note != null && note.getBookmarkType() != null ? note.getBookmarkType().name() : null;
+                    boolean starred = note != null && note.isStarred();
+                    int failCount = fails.getOrDefault(p.getId(), 0);
+                    return toDto(p, userId, bm, starred, failCount);
+                }).toList();
     }
 
     @Transactional(readOnly = true)
     public CodeProblemDto getProblem(Long id, Long userId) {
         CodeProblem p = getProblemOrThrow(id);
-        return toDto(p, userId);
+        String bookmark = null;
+        boolean starred = false;
+        int failCount = 0;
+        if (userId != null) {
+            var noteOpt = noteRepository.findByUserIdAndProblemId(userId, id);
+            if (noteOpt.isPresent()) {
+                ProblemNote note = noteOpt.get();
+                bookmark = note.getBookmarkType() != null ? note.getBookmarkType().name() : null;
+                starred = note.isStarred();
+            }
+            failCount = submissionRepository.countByProblemIdAndUserId(id, userId);
+        }
+        return toDto(p, userId, bookmark, starred, failCount);
     }
 
     @Transactional
@@ -106,6 +138,28 @@ public class ProblemService {
                 problem, user, req.language(), req.code(), overallStatus, passed, testCases.size());
         submissionRepository.save(submission);
 
+        // Auto-update retry schedule if user has a WRONG note and got ACCEPTED
+        if ("ACCEPTED".equals(overallStatus) && userId != null) {
+            noteRepository.findByUserIdAndProblemId(userId, problemId).ifPresent(note -> {
+                if (note.getBookmarkType() == BookmarkType.WRONG) {
+                    // Record as quality 5 (perfect recall)
+                    note.setRetryCount(note.getRetryCount() + 1);
+                    note.setLastRetryDate(java.time.LocalDate.now());
+                    if (note.getRetryCount() <= 1) {
+                        note.setRetryInterval(1);
+                    } else if (note.getRetryCount() == 2) {
+                        note.setRetryInterval(6);
+                    } else {
+                        note.setRetryInterval((int) Math.round(note.getRetryInterval() * note.getEaseFactor()));
+                    }
+                    double ef = note.getEaseFactor() + 0.1;
+                    note.setEaseFactor(Math.max(1.3, ef));
+                    note.setNextRetryDate(java.time.LocalDate.now().plusDays(note.getRetryInterval()));
+                    noteRepository.save(note);
+                }
+            });
+        }
+
         return new CodeSubmitResultDto(overallStatus, passed, testCases.size(), results);
     }
 
@@ -132,8 +186,9 @@ public class ProblemService {
                 req.javaDriverCode(), req.pythonDriverCode(),
                 req.testCasesJson(), req.tags());
         p.setHint(req.hint());
+        p.setCategory(req.category());
         p = problemRepository.save(p);
-        return toDto(p, null);
+        return toDto(p, null, null, false, 0);
     }
 
     @Transactional
@@ -150,24 +205,29 @@ public class ProblemService {
         if (req.pythonDriverCode() != null) p.setPythonDriverCode(req.pythonDriverCode());
         if (req.testCasesJson() != null) p.setTestCasesJson(req.testCasesJson());
         if (req.tags() != null) p.setTags(req.tags());
+        if (req.category() != null) p.setCategory(req.category());
         p = problemRepository.save(p);
-        return toDto(p, null);
+        return toDto(p, null, null, false, 0);
     }
 
     @Transactional
     public void deleteProblem(Long id) {
+        // Detach notes so users keep their review notes
+        noteRepository.clearProblemReference(id);
         submissionRepository.deleteByProblemId(id);
         problemRepository.deleteById(id);
     }
 
-    private CodeProblemDto toDto(CodeProblem p, Long userId) {
+    private CodeProblemDto toDto(CodeProblem p, Long userId, String bookmarkType, boolean starred, int failCount) {
         boolean accepted = userId != null && submissionRepository.existsByProblemIdAndUserIdAndStatus(p.getId(), userId, "ACCEPTED");
+        int attemptCount = userId != null ? submissionRepository.countByProblemIdAndUserId(p.getId(), userId) : 0;
         return new CodeProblemDto(
                 p.getId(), p.getProblemNumber(), p.getTitle(), p.getDifficulty(),
                 p.getDescription(), p.getHint(),
                 p.getJavaTemplate(), p.getPythonTemplate(),
                 p.getJavaDriverCode(), p.getPythonDriverCode(),
-                p.getTestCasesJson(), p.getTags(), accepted);
+                p.getTestCasesJson(), p.getTags(), p.getCategory(), accepted, bookmarkType, starred,
+                failCount, attemptCount);
     }
 
     private List<Map<String, String>> parseTestCases(String json) {

@@ -16,6 +16,7 @@
     <button data-view="review-view" data-i18n="navReview">🔄 Review</button>
     <button data-view="stats-view" data-i18n="navStats">📊 Stats</button>
     <button data-view="practice-view" data-i18n="navPractice">💻 Practice</button>
+    <button data-view="notebook-view" data-i18n="navNotebook">📝 Notebook</button>
   </nav>
   <div style="margin-left:auto;display:flex;gap:.5rem;align-items:center">
     <button class="btn btn-primary btn-sm" onclick="openImportModal()" data-i18n="navImport">⬆️ Import</button>
@@ -80,9 +81,8 @@
 
   <!-- ── Review View ─────────────────────────────────── -->
   <section id="review-view" class="view">
+    <p id="review-progress" class="review-progress"></p>
     <div id="review-content">
-      <p id="review-progress" class="review-progress"></p>
-
       <div class="flip-scene">
         <div id="flip-card" class="flip-card" onclick="flipCard()">
           <div class="flip-front">
@@ -115,22 +115,21 @@
           <button class="btn btn-sm btn-secondary" onclick="overrideGrade()" data-i18n="overrideGrade">Override manually</button>
         </div>
       </div>
-
-      <!-- Rating buttons (shown after flip or override) -->
-      <div id="review-controls" class="review-controls">
-        <button class="btn btn-again" onclick="submitReview(0)">
-          <span data-i18n="again">Again</span> <small style="display:block;font-size:.7rem;opacity:.8">[0]</small>
-        </button>
-        <button class="btn btn-hard"  onclick="submitReview(2)">
-          <span data-i18n="hard">Hard</span> <small style="display:block;font-size:.7rem;opacity:.8">[1]</small>
-        </button>
-        <button class="btn btn-good"  onclick="submitReview(3)">
-          <span data-i18n="good">Good</span> <small style="display:block;font-size:.7rem;opacity:.8">[2]</small>
-        </button>
-        <button class="btn btn-easy"  onclick="submitReview(5)">
-          <span data-i18n="easy">Easy</span> <small style="display:block;font-size:.7rem;opacity:.8">[3]</small>
-        </button>
-      </div>
+    </div>
+    <!-- Rating buttons (outside review-content so they survive innerHTML replacement) -->
+    <div id="review-controls" class="review-controls">
+      <button class="btn btn-again" onclick="submitReview(0)">
+        <span data-i18n="again">Again</span> <small style="display:block;font-size:.7rem;opacity:.8">[0]</small>
+      </button>
+      <button class="btn btn-hard"  onclick="submitReview(2)">
+        <span data-i18n="hard">Hard</span> <small style="display:block;font-size:.7rem;opacity:.8">[1]</small>
+      </button>
+      <button class="btn btn-good"  onclick="submitReview(3)">
+        <span data-i18n="good">Good</span> <small style="display:block;font-size:.7rem;opacity:.8">[2]</small>
+      </button>
+      <button class="btn btn-easy"  onclick="submitReview(5)">
+        <span data-i18n="easy">Easy</span> <small style="display:block;font-size:.7rem;opacity:.8">[3]</small>
+      </button>
     </div>
   </section>
 
@@ -192,7 +191,22 @@
         <h2 data-i18n="codeProblems">Code Problems</h2>
         <button class="btn btn-primary btn-sm" id="add-problem-btn" style="display:none" onclick="openCreateProblemModal()">+ Add Problem</button>
       </div>
-      <div id="problem-grid" class="problem-grid">
+      <!-- Filters -->
+      <div class="problem-filters">
+        <input type="text" id="problem-search" class="problem-search-input" placeholder="Search by title or #number..." oninput="filterProblems()">
+        <div id="practice-diff-filter" class="filter-btn-group">
+          <button class="filter-btn active" onclick="setDiffFilter('All')">All</button>
+          <button class="filter-btn filter-easy" onclick="setDiffFilter('Easy')">Easy</button>
+          <button class="filter-btn filter-medium" onclick="setDiffFilter('Medium')">Medium</button>
+          <button class="filter-btn filter-hard" onclick="setDiffFilter('Hard')">Hard</button>
+        </div>
+        <select id="category-filter" class="category-select" onchange="filterProblems()">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+      <div id="due-retry-section" style="display:none"></div>
+      <div id="problem-progress" class="problem-progress"></div>
+      <div id="problem-category-list">
         <p style="color:var(--muted)" data-i18n="loading">Loading...</p>
       </div>
     </div>
@@ -203,6 +217,9 @@
         <button class="btn btn-secondary btn-sm" onclick="backToProblems()" data-i18n="back">← Back</button>
         <h2 id="practice-title">Problem</h2>
         <div style="margin-left:auto;display:flex;gap:.5rem;align-items:center">
+          <button class="quick-note-btn" id="btn-star" onclick="toggleQuickNote('STARRED')" title="收藏">☆</button>
+          <button class="quick-note-btn" id="btn-todo" onclick="toggleQuickNote('TODO')" title="待做">📋</button>
+          <button class="quick-note-btn" id="btn-note" onclick="openNoteModal(currentProblem?.id)" title="笔记">📝</button>
           <select id="lang-select" class="lang-select" onchange="switchLanguage()">
             <option value="java">Java</option>
             <option value="python">Python</option>
@@ -256,6 +273,51 @@
           </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ── Notebook View ─────────────────────────────────── -->
+  <section id="notebook-view" class="view">
+    <div class="section-header">
+      <h2 data-i18n="notebook">Notebook</h2>
+      <button class="btn btn-sm" style="background:#fbbf24;color:#78350f" onclick="runWeaknessAnalysis()" data-i18n="aiAnalysis">🤖 AI Analysis</button>
+    </div>
+
+    <!-- Summary badges -->
+    <div id="notebook-summary" class="notebook-summary"></div>
+
+    <!-- Filters -->
+    <div class="notebook-filters">
+      <div class="filter-btn-group">
+        <button class="filter-btn active" onclick="setNbTypeFilter('')" data-i18n="allCategories">All</button>
+        <button class="filter-btn" onclick="setNbTypeFilter('WRONG')">❌</button>
+        <button class="filter-btn" onclick="setNbTypeFilter('STARRED')">⭐</button>
+        <button class="filter-btn" onclick="setNbTypeFilter('TODO')">📋</button>
+        <button class="filter-btn" onclick="setNbTypeFilter('DUE')">🔄</button>
+      </div>
+      <select id="nb-category-filter" class="category-select" onchange="filterNotebook()">
+        <option value="" data-i18n="allCategories">All Categories</option>
+      </select>
+      <select id="nb-error-filter" class="category-select" onchange="filterNotebook()">
+        <option value="">All Reasons</option>
+        <option value="LOGIC_ERROR" data-i18n="errorLogic">Logic Error</option>
+        <option value="EDGE_CASE" data-i18n="errorEdge">Edge Case</option>
+        <option value="TLE_APPROACH" data-i18n="errorTLE">TLE Approach</option>
+        <option value="SYNTAX" data-i18n="errorSyntax">Syntax</option>
+        <option value="DATA_STRUCTURE" data-i18n="errorDS">Data Structure</option>
+        <option value="ALGORITHM" data-i18n="errorAlgo">Algorithm</option>
+        <option value="OTHER" data-i18n="errorOther">Other</option>
+      </select>
+    </div>
+
+    <!-- Note list -->
+    <div id="notebook-list"></div>
+
+    <!-- AI Analysis panel -->
+    <div id="weakness-panel" class="weakness-panel" style="display:none">
+      <h3 data-i18n="weaknessTitle">🤖 Weakness Analysis</h3>
+      <div id="weakness-stats" class="weakness-stats"></div>
+      <div id="weakness-ai-text" class="weakness-ai-text"></div>
     </div>
   </section>
 
@@ -448,7 +510,10 @@
           <select id="prob-difficulty"><option>Easy</option><option>Medium</option><option>Hard</option></select>
         </div>
       </div>
-      <div class="form-group"><label>Tags</label><input id="prob-tags" type="text" placeholder="Array,Hash Table" /></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+        <div class="form-group"><label>Tags</label><input id="prob-tags" type="text" placeholder="Array,Hash Table" /></div>
+        <div class="form-group"><label>Category</label><input id="prob-category" type="text" placeholder="哈希, 双指针, 动态规划..." /></div>
+      </div>
       <div class="form-group"><label>Description *</label><textarea id="prob-desc" style="min-height:100px" required></textarea></div>
       <div class="form-group"><label>Hint / Approach</label><textarea id="prob-hint" style="min-height:60px" placeholder="Key idea, time complexity, approach..."></textarea></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
@@ -480,6 +545,36 @@
   </div>
 </div>
 
+<!-- ── Note Modal (错题笔记专用) ─────────────────────────── -->
+<div id="note-modal" class="modal-overlay hidden">
+  <div class="modal" style="max-width:480px">
+    <h3 id="note-modal-title" data-i18n="addToWrong">加入错题本</h3>
+    <input type="hidden" id="note-problem-id" />
+    <div class="form-group">
+      <label data-i18n="errorReasonLabel">Error Reason</label>
+      <select id="note-error-reason">
+        <option value="">--</option>
+        <option value="LOGIC_ERROR" data-i18n="errorLogic">Logic Error</option>
+        <option value="EDGE_CASE" data-i18n="errorEdge">Edge Case</option>
+        <option value="TLE_APPROACH" data-i18n="errorTLE">TLE Approach</option>
+        <option value="SYNTAX" data-i18n="errorSyntax">Syntax</option>
+        <option value="DATA_STRUCTURE" data-i18n="errorDS">Data Structure</option>
+        <option value="ALGORITHM" data-i18n="errorAlgo">Algorithm</option>
+        <option value="OTHER" data-i18n="errorOther">Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label data-i18n="noteLabel">Note</label>
+      <textarea id="note-text" rows="4" data-i18n-placeholder="notePlaceholder" placeholder="Your notes..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" id="note-delete-btn" onclick="deleteNoteConfirm()" style="display:none;margin-right:auto" data-i18n="del">Delete</button>
+      <button class="btn btn-secondary" onclick="closeNoteModal()" data-i18n="cancel">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNote()" data-i18n="save">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Fireworks Canvas ──────────────────────────────── -->
 <canvas id="fireworks-canvas"></canvas>
 
@@ -491,6 +586,7 @@
 <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
 <script src="i18n-builtin.js"></script>
+<script src="i18n-problems.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

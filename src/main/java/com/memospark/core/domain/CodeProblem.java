@@ -49,6 +49,9 @@ public class CodeProblem {
     @Column(length = 500)
     private String tags;
 
+    @Column(length = 50)
+    private String category;
+
     public CodeProblem(Integer problemNumber, String title, String difficulty,
                        String description, String javaTemplate, String pythonTemplate,
                        String javaDriverCode, String pythonDriverCode,

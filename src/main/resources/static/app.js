@@ -106,6 +106,11 @@ const i18n = {
     addProblem: 'Add Problem',
     editProblem: 'Edit Problem',
     hint: 'Hint',
+    analyzeTLE: '🤖 Analyze Timeout',
+    analyzingTLE: 'AI analyzing...',
+    allCategories: 'All Categories',
+    searchProblemPlaceholder: 'Search by title or #number...',
+    problemProgress: '{0}/{1} solved',
     answerPlaceholder: 'Type your answer here...',
     skipToFlip: 'Skip, just flip',
     acceptGrade: 'Accept & Continue',
@@ -199,6 +204,40 @@ const i18n = {
     frontBackRequired: 'Front and Back are required',
     selectFile: 'Please select a file',
     importError: 'Import error',
+    // notebook
+    navNotebook: 'Notebook',
+    notebook: 'Notebook',
+    bookmarkType: 'Type',
+    wrongType: 'Wrong',
+    starredType: 'Starred',
+    todoType: 'Todo',
+    errorReasonLabel: 'Error Reason',
+    noteLabel: 'Note',
+    notePlaceholder: 'Your notes...',
+    addToNotebook: 'Add to Notebook',
+    editNote: 'Edit Note',
+    dueForRetry: 'Due for Retry',
+    retryNow: 'Redo',
+    noteAdded: 'Note added',
+    noteUpdated: 'Note updated',
+    noteDeleted: 'Note deleted',
+    noNotesYet: 'No notes yet. Add problems from the Practice tab!',
+    errorLogic: 'Logic Error',
+    errorEdge: 'Edge Case',
+    errorTLE: 'TLE Approach',
+    errorSyntax: 'Syntax',
+    errorDS: 'Data Structure',
+    errorAlgo: 'Algorithm',
+    errorOther: 'Other',
+    aiAnalysis: 'AI Analysis',
+    dueRetries: 'Due',
+    weaknessTitle: 'Weakness Analysis',
+    analyzingWeakness: 'AI analyzing...',
+    noWrongNotes: 'No wrong problems to analyze',
+    addToWrong: 'Add to Wrong',
+    autoAddedWrong: 'Auto added to wrong notebook',
+    todayRetry: "Today's Retry",
+    failCount: '{0} fails',
     error: 'Error',
   },
   zh: {
@@ -331,6 +370,11 @@ const i18n = {
     aiNewPoolDeck: '新建卡池牌组',
     aiNewDeckPlaceholder: '输入新牌组名称...',
     running: '运行中...',
+    analyzeTLE: '🤖 分析超时',
+    analyzingTLE: 'AI 分析中...',
+    allCategories: '全部分类',
+    searchProblemPlaceholder: '按标题或 #编号搜索...',
+    problemProgress: '已解决 {0}/{1}',
     // new/review labels
     newCards: '新学',
     reviewCardsLabel: '复习',
@@ -397,6 +441,40 @@ const i18n = {
     frontBackRequired: '正面和背面不能为空',
     selectFile: '请选择一个文件',
     importError: '导入出错',
+    // notebook
+    navNotebook: '笔记本',
+    notebook: '笔记本',
+    bookmarkType: '类型',
+    wrongType: '错题',
+    starredType: '收藏',
+    todoType: '待做',
+    errorReasonLabel: '错误原因',
+    noteLabel: '笔记',
+    notePlaceholder: '写下你的笔记...',
+    addToNotebook: '加入笔记本',
+    editNote: '编辑笔记',
+    dueForRetry: '待重练',
+    retryNow: '重做',
+    noteAdded: '已添加笔记',
+    noteUpdated: '笔记已更新',
+    noteDeleted: '笔记已删除',
+    noNotesYet: '暂无笔记，去练习页添加题目吧！',
+    errorLogic: '逻辑错误',
+    errorEdge: '边界情况',
+    errorTLE: '超时思路',
+    errorSyntax: '语法错误',
+    errorDS: '数据结构',
+    errorAlgo: '算法错误',
+    errorOther: '其他',
+    aiAnalysis: 'AI 分析',
+    dueRetries: '待重练',
+    weaknessTitle: '薄弱点分析',
+    analyzingWeakness: 'AI 分析中...',
+    noWrongNotes: '暂无错题可供分析',
+    addToWrong: '加入错题本',
+    autoAddedWrong: '已自动加入错题本',
+    todayRetry: '今日待重练',
+    failCount: '失败{0}次',
     error: '错误',
   },
 };
@@ -451,7 +529,20 @@ function toggleLang() {
     }
     else if (activeView.id === 'stats-view') loadStats();
     else if (activeView.id === 'practice-view') {
-      if (document.getElementById('practice-list').style.display !== 'none') loadProblems();
+      if (document.getElementById('practice-detail').style.display !== 'none' && currentProblem) {
+        // Re-render detail page with new language
+        document.getElementById('practice-title').textContent = `#${currentProblem.problemNumber} ${tProblemTitle(currentProblem)}`;
+        document.getElementById('problem-desc').textContent = tProblemDesc(currentProblem);
+      } else if (allProblems.length) {
+        // Re-render list from cache (no API call needed)
+        filterProblems();
+      } else {
+        loadProblems();
+      }
+    }
+    else if (activeView.id === 'notebook-view') {
+      if (allNotes.length) filterNotebook();
+      else loadNotebook();
     }
   }
 }
@@ -483,6 +574,21 @@ function tCardBack(frontText, backText) {
     return builtinZh.cards[frontText].back;
   }
   return backText;
+}
+
+// ── Problem i18n helpers ──────────────────────────────────
+function tProblemTitle(problem) {
+  if (currentLang === 'zh' && typeof problemZh !== 'undefined' && problemZh[problem.problemNumber]) {
+    return problemZh[problem.problemNumber].title;
+  }
+  return problem.title;
+}
+
+function tProblemDesc(problem) {
+  if (currentLang === 'zh' && typeof problemZh !== 'undefined' && problemZh[problem.problemNumber]) {
+    return problemZh[problem.problemNumber].description;
+  }
+  return problem.description;
 }
 
 // ── State ──────────────────────────────────────────────────
@@ -1513,6 +1619,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       else if (view === 'review-view') startReview();
       else if (view === 'stats-view') loadStats();
       else if (view === 'practice-view') loadProblems();
+      else if (view === 'notebook-view') loadNotebook();
     });
   });
 
@@ -1521,10 +1628,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (id('review-view').classList.contains('active')) {
       if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); flipCard(); }
       if (state.flipped) {
-        if (e.key === '1') submitReview(1); // Hard
-        if (e.key === '2') submitReview(3); // Good
-        if (e.key === '3') submitReview(4); // Easy
         if (e.key === '0') submitReview(0); // Again
+        if (e.key === '1') submitReview(2); // Hard
+        if (e.key === '2') submitReview(3); // Good
+        if (e.key === '3') submitReview(5); // Easy
       }
     }
   });
@@ -1837,6 +1944,23 @@ function initMonaco(language, value) {
   });
 }
 
+let allProblems = [];
+let currentDiffFilter = 'All';
+
+function renderDueRetrySection(dueNotes) {
+  const el = document.getElementById('due-retry-section');
+  if (!dueNotes || !dueNotes.length) {
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = '';
+  const items = dueNotes.map(n => {
+    const title = currentLang === 'zh' && typeof problemZh !== 'undefined' && problemZh[n.problemNumber] ? problemZh[n.problemNumber].title : n.title;
+    return `<span class="due-retry-item" onclick="openProblem(${n.problemId})">#${n.problemNumber} ${esc(title)}</span>`;
+  }).join('');
+  el.innerHTML = `<div class="due-retry-box"><h3>🔄 ${t('todayRetry')} (${dueNotes.length})</h3>${items}</div>`;
+}
+
 async function loadProblems() {
   showView('practice-view');
   document.getElementById('practice-list').style.display = '';
@@ -1849,7 +1973,11 @@ async function loadProblems() {
   }
 
   try {
-    const problems = await apiFetch('/practice/problems');
+    const [problems, dueNotes] = await Promise.all([
+      apiFetch('/practice/problems'),
+      apiFetch('/practice/notebook/due'),
+    ]);
+    renderDueRetrySection(dueNotes);
     renderProblems(problems);
   } catch (e) {
     showToast(t('error') + ': ' + e.message);
@@ -1857,31 +1985,123 @@ async function loadProblems() {
 }
 
 function renderProblems(problems) {
-  const grid = document.getElementById('problem-grid');
+  allProblems = problems;
+
+  // Populate category dropdown
+  const catSelect = document.getElementById('category-filter');
+  const categories = [...new Set(problems.map(p => p.category || '').filter(c => c))];
+  catSelect.innerHTML = `<option value="">${t('allCategories')}</option>` +
+    categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+
+  // Update search placeholder
+  const searchInput = document.getElementById('problem-search');
+  if (searchInput) searchInput.placeholder = t('searchProblemPlaceholder');
+
+  filterProblems();
+}
+
+function setDiffFilter(diff) {
+  currentDiffFilter = diff;
+  document.querySelectorAll('#practice-diff-filter .filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.trim() === diff);
+  });
+  filterProblems();
+}
+
+function filterProblems() {
+  const search = (document.getElementById('problem-search')?.value || '').toLowerCase().trim();
+  const catFilter = document.getElementById('category-filter')?.value || '';
+
+  let filtered = allProblems;
+
+  // Difficulty filter
+  if (currentDiffFilter !== 'All') {
+    filtered = filtered.filter(p => p.difficulty === currentDiffFilter);
+  }
+
+  // Category filter
+  if (catFilter) {
+    filtered = filtered.filter(p => p.category === catFilter);
+  }
+
+  // Search filter
+  if (search) {
+    filtered = filtered.filter(p =>
+      p.title.toLowerCase().includes(search) ||
+      tProblemTitle(p).toLowerCase().includes(search) ||
+      ('#' + p.problemNumber).includes(search) ||
+      String(p.problemNumber).includes(search)
+    );
+  }
+
+  // Progress
+  const solved = allProblems.filter(p => p.accepted).length;
+  const progressEl = document.getElementById('problem-progress');
+  if (progressEl) {
+    progressEl.textContent = t('problemProgress', solved, allProblems.length);
+  }
+
+  renderCategoryList(filtered);
+}
+
+function renderCategoryList(problems) {
+  const container = document.getElementById('problem-category-list');
   if (!problems.length) {
-    grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+    container.innerHTML = `<div class="empty" style="text-align:center;padding:2rem">
       <div class="empty-icon">💻</div>
       <h3>${t('codeProblems')}</h3>
     </div>`;
     return;
   }
-  grid.innerHTML = problems.map(p => {
-    const diffClass = p.difficulty === 'Easy' ? 'diff-easy' : p.difficulty === 'Medium' ? 'diff-medium' : 'diff-hard';
-    return `
-    <div class="problem-card" onclick="openProblem(${p.id})">
-      <div style="margin-bottom:.5rem">
-        <span class="problem-number">#${p.problemNumber}</span>
+
+  // Group by category
+  const groups = {};
+  problems.forEach(p => {
+    const cat = p.category || 'Other';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(p);
+  });
+
+  const isAdmin = state.currentUser && state.currentUser.role === 'ADMIN';
+
+  container.innerHTML = Object.entries(groups).map(([cat, items]) => {
+    const done = items.filter(p => p.accepted).length;
+    const rows = items.map(p => {
+      const diffClass = p.difficulty === 'Easy' ? 'diff-easy' : p.difficulty === 'Medium' ? 'diff-medium' : 'diff-hard';
+      const tags = [];
+      if (p.starred) tags.push('<span title="收藏" style="color:#f59e0b">★</span>');
+      if (p.bookmarkType === 'WRONG') tags.push('<span title="错题">❌</span>');
+      if (p.bookmarkType === 'TODO') tags.push('<span title="待做">📋</span>');
+      const bmTag = tags.join('');
+      const failTag = !p.accepted && p.failCount > 0 ? `<span class="fail-badge">×${p.failCount}</span>` : '';
+      const statusIcon = p.accepted ? '✅' : p.failCount > 0 ? '❌' : '○';
+      return `<div class="problem-row" onclick="openProblem(${p.id})">
+        <span class="status-icon ${p.accepted ? 'status-done' : p.failCount > 0 ? 'status-fail' : 'status-todo'}">${statusIcon}${failTag}</span>
+        <span class="prob-number">#${p.problemNumber}</span>
+        <span class="prob-title">${esc(tProblemTitle(p))}</span>
         <span class="difficulty-badge ${diffClass}">${p.difficulty}</span>
-        ${p.accepted ? '<span class="ac-badge">✓ AC</span>' : ''}
+        ${bmTag ? `<span class="prob-bookmark-tag">${bmTag}</span>` : ''}
+        ${isAdmin ? `<span class="prob-admin-actions">
+          <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();openEditProblemModal(${p.id})" title="Edit" style="padding:.15rem .35rem;font-size:.7rem">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteProblemConfirm(${p.id})" title="Delete" style="padding:.15rem .35rem;font-size:.7rem">🗑️</button>
+        </span>` : ''}
+      </div>`;
+    }).join('');
+
+    return `<div class="category-section">
+      <div class="category-header" onclick="toggleCategory(this)">
+        <span class="cat-left"><span class="cat-arrow">▼</span> ${esc(cat)}</span>
+        <span class="cat-progress">${done}/${items.length}</span>
       </div>
-      <h3>${esc(p.title)}</h3>
-      <div class="problem-tags">${esc(p.tags || '')}</div>
-      ${state.currentUser && state.currentUser.role === 'ADMIN' ? `<div class="deck-actions" style="top:.5rem;right:.5rem">
-        <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();openEditProblemModal(${p.id})" title="Edit">✏️</button>
-        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteProblemConfirm(${p.id})" title="Delete">🗑️</button>
-      </div>` : ''}
+      <div class="category-body">${rows}</div>
     </div>`;
   }).join('');
+}
+
+function toggleCategory(header) {
+  header.classList.toggle('collapsed');
+  const body = header.nextElementSibling;
+  body.classList.toggle('collapsed');
 }
 
 async function openProblem(problemId) {
@@ -1891,8 +2111,9 @@ async function openProblem(problemId) {
 
     document.getElementById('practice-list').style.display = 'none';
     document.getElementById('practice-detail').style.display = '';
-    document.getElementById('practice-title').textContent = `#${problem.problemNumber} ${problem.title}`;
-    document.getElementById('problem-desc').textContent = problem.description;
+    document.getElementById('practice-title').textContent = `#${problem.problemNumber} ${tProblemTitle(problem)}`;
+    document.getElementById('problem-desc').textContent = tProblemDesc(problem);
+    updateQuickNoteButtons();
     document.getElementById('result-panel').style.display = 'none';
 
     // Hint - static hint + AI hint
@@ -1950,6 +2171,7 @@ function openCreateProblemModal() {
   document.getElementById('prob-title').value = '';
   document.getElementById('prob-difficulty').value = 'Easy';
   document.getElementById('prob-tags').value = '';
+  document.getElementById('prob-category').value = '';
   document.getElementById('prob-desc').value = '';
   document.getElementById('prob-hint').value = '';
   document.getElementById('prob-java-tpl').value = '';
@@ -1969,6 +2191,7 @@ async function openEditProblemModal(problemId) {
     document.getElementById('prob-title').value = p.title;
     document.getElementById('prob-difficulty').value = p.difficulty;
     document.getElementById('prob-tags').value = p.tags || '';
+    document.getElementById('prob-category').value = p.category || '';
     document.getElementById('prob-desc').value = p.description || '';
     document.getElementById('prob-hint').value = p.hint || '';
     document.getElementById('prob-java-tpl').value = p.javaTemplate || '';
@@ -2000,6 +2223,7 @@ async function saveProblem() {
     javaDriverCode: document.getElementById('prob-java-driver').value || '',
     pythonDriverCode: document.getElementById('prob-python-driver').value || '',
     testCasesJson: document.getElementById('prob-testcases').value || '[]',
+    category: document.getElementById('prob-category').value.trim() || null,
   };
   if (!data.title || !data.problemNumber) {
     showToast(t('nameRequired'));
@@ -2048,6 +2272,20 @@ async function submitCode() {
 
     renderResult(result);
     loadSubmissions(currentProblem.id);
+
+    // Auto-add to wrong notebook on failure (if not already WRONG)
+    if (result.status !== 'ACCEPTED' && currentProblem.bookmarkType !== 'WRONG') {
+      const errMap = { 'WRONG_ANSWER': 'LOGIC_ERROR', 'TIME_LIMIT': 'TLE_APPROACH', 'COMPILE_ERROR': 'SYNTAX', 'RUNTIME_ERROR': 'LOGIC_ERROR' };
+      try {
+        await apiFetch(`/practice/notebook/${currentProblem.id}/wrong`, {
+          method: 'POST',
+          body: JSON.stringify({ note: '', errorReason: errMap[result.status] || 'OTHER' }),
+        });
+        currentProblem.bookmarkType = 'WRONG';
+        updateQuickNoteButtons();
+        showToast('📝 ' + t('autoAddedWrong'));
+      } catch (_) { /* silent */ }
+    }
   } catch (e) {
     showToast(t('error') + ': ' + e.message);
   } finally {
@@ -2065,6 +2303,17 @@ function renderResult(result) {
     result.status === 'WRONG_ANSWER' ? 'result-wrong' : 'result-error';
   header.innerHTML = `<span class="${statusClass}">${result.status}</span> — ${result.passedCases}/${result.totalCases} passed`;
 
+  // Add TLE analysis button for TIME_LIMIT or RUNTIME_ERROR
+  if (result.status === 'TIME_LIMIT' || result.status === 'RUNTIME_ERROR') {
+    header.innerHTML += ` <button class="tle-analysis-btn" onclick="requestTLEAnalysis()">${t('analyzeTLE')}</button>`;
+  }
+
+  // Add "Add to Wrong" button for failed submissions
+  if (result.status !== 'ACCEPTED' && currentProblem) {
+    const errMap = { 'WRONG_ANSWER': 'LOGIC_ERROR', 'TIME_LIMIT': 'TLE_APPROACH', 'COMPILE_ERROR': 'SYNTAX', 'RUNTIME_ERROR': 'LOGIC_ERROR' };
+    header.innerHTML += ` <button class="btn btn-sm btn-danger" onclick="openNoteModal(${currentProblem.id}, '${errMap[result.status] || 'OTHER'}')" style="margin-left:.5rem">📝 ${t('addToWrong')}</button>`;
+  }
+
   const casesDiv = document.getElementById('result-cases');
   casesDiv.innerHTML = result.testCases.map(tc => {
     const cls = tc.passed ? 'case-pass' : 'case-fail';
@@ -2075,6 +2324,39 @@ function renderResult(result) {
       ${!tc.passed ? `<div class="case-detail">Input: ${esc(tc.input)}\nExpected: ${esc(tc.expectedOutput)}\nActual: ${esc(tc.actualOutput)}</div>` : ''}
     </div>`;
   }).join('');
+}
+
+async function requestTLEAnalysis() {
+  if (!currentProblem || !monacoEditor) return;
+
+  const btn = document.querySelector('.tle-analysis-btn');
+  if (btn) { btn.textContent = t('analyzingTLE'); btn.disabled = true; }
+
+  try {
+    const res = await apiFetch('/ai/analyze-tle', {
+      method: 'POST',
+      body: JSON.stringify({
+        problemDescription: currentProblem.description,
+        userCode: monacoEditor.getValue(),
+        language: document.getElementById('lang-select').value,
+      }),
+    });
+
+    // Show analysis result below result-cases
+    const casesDiv = document.getElementById('result-cases');
+    const existingAnalysis = casesDiv.querySelector('.tle-analysis-result');
+    if (existingAnalysis) existingAnalysis.remove();
+
+    const analysisDiv = document.createElement('div');
+    analysisDiv.className = 'tle-analysis-result';
+    analysisDiv.textContent = res.analysis;
+    casesDiv.appendChild(analysisDiv);
+
+    if (btn) btn.style.display = 'none';
+  } catch (e) {
+    showToast(t('error') + ': ' + e.message);
+    if (btn) { btn.textContent = t('analyzeTLE'); btn.disabled = false; }
+  }
 }
 
 async function loadSubmissions(problemId) {
@@ -2098,5 +2380,292 @@ async function loadSubmissions(problemId) {
     }).join('');
   } catch (e) {
     // silent — non-critical
+  }
+}
+
+// ── Notebook ─────────────────────────────────────────────────
+let allNotes = [];
+let currentNbTypeFilter = '';
+let noteEditingProblemId = null;
+
+async function loadNotebook() {
+  showView('notebook-view');
+  const listEl = document.getElementById('notebook-list');
+  listEl.innerHTML = `<p style="color:var(--muted);text-align:center;padding:2rem">${t('loading')}</p>`;
+
+  try {
+    const [notes, summary] = await Promise.all([
+      apiFetch('/practice/notebook'),
+      apiFetch('/practice/notebook/summary'),
+    ]);
+    allNotes = notes;
+    renderNotebookSummary(summary);
+    populateNbCategoryFilter(notes);
+    filterNotebook();
+  } catch (e) {
+    listEl.innerHTML = `<p style="color:var(--muted);text-align:center;padding:2rem">${t('error')}: ${esc(e.message)}</p>`;
+  }
+}
+
+function renderNotebookSummary(s) {
+  const el = document.getElementById('notebook-summary');
+  el.innerHTML = `
+    <span class="nb-badge">❌ <span class="nb-count">${s.wrong}</span> ${t('wrongType')}</span>
+    <span class="nb-badge">⭐ <span class="nb-count">${s.starred}</span> ${t('starredType')}</span>
+    <span class="nb-badge">📋 <span class="nb-count">${s.todo}</span> ${t('todoType')}</span>
+    <span class="nb-badge" style="${s.dueRetries > 0 ? 'background:#fef2f2;border-color:#fecaca' : ''}">🔄 <span class="nb-count">${s.dueRetries}</span> ${t('dueRetries')}</span>
+  `;
+}
+
+function populateNbCategoryFilter(notes) {
+  const cats = [...new Set(notes.map(n => n.category || '').filter(c => c))];
+  const sel = document.getElementById('nb-category-filter');
+  sel.innerHTML = `<option value="">${t('allCategories')}</option>` +
+    cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+}
+
+function setNbTypeFilter(type) {
+  currentNbTypeFilter = type;
+  document.querySelectorAll('.notebook-filters .filter-btn').forEach(btn => {
+    const btnType = btn.getAttribute('onclick')?.match(/'([^']*)'/)?.[1] || '';
+    btn.classList.toggle('active', btnType === type);
+  });
+  filterNotebook();
+}
+
+function filterNotebook() {
+  const catFilter = document.getElementById('nb-category-filter')?.value || '';
+  const errFilter = document.getElementById('nb-error-filter')?.value || '';
+
+  let filtered = allNotes;
+
+  if (currentNbTypeFilter === 'DUE') {
+    filtered = filtered.filter(n => n.isDueForRetry);
+  } else if (currentNbTypeFilter === 'STARRED') {
+    filtered = filtered.filter(n => n.starred);
+  } else if (currentNbTypeFilter) {
+    filtered = filtered.filter(n => n.bookmarkType === currentNbTypeFilter);
+  }
+
+  if (catFilter) {
+    filtered = filtered.filter(n => n.category === catFilter);
+  }
+
+  if (errFilter) {
+    filtered = filtered.filter(n => n.errorReason === errFilter);
+  }
+
+  renderNotebook(filtered);
+}
+
+function renderNotebook(notes) {
+  const listEl = document.getElementById('notebook-list');
+  if (!notes.length) {
+    listEl.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--muted)">${t('noNotesYet')}</div>`;
+    return;
+  }
+
+  const errorReasonLabel = (r) => {
+    const map = { LOGIC_ERROR: t('errorLogic'), EDGE_CASE: t('errorEdge'), TLE_APPROACH: t('errorTLE'), SYNTAX: t('errorSyntax'), DATA_STRUCTURE: t('errorDS'), ALGORITHM: t('errorAlgo'), OTHER: t('errorOther') };
+    return map[r] || r || '';
+  };
+
+  listEl.innerHTML = notes.map(n => {
+    const icons = [];
+    if (n.starred) icons.push('★');
+    if (n.bookmarkType === 'WRONG') icons.push('❌');
+    if (n.bookmarkType === 'TODO') icons.push('📋');
+    const icon = icons.join('') || '📝';
+    const diffClass = n.difficulty === 'Easy' ? 'diff-easy' : n.difficulty === 'Medium' ? 'diff-medium' : 'diff-hard';
+    const title = currentLang === 'zh' && typeof problemZh !== 'undefined' && problemZh[n.problemNumber] ? problemZh[n.problemNumber].title : n.title;
+    const errTag = n.errorReason ? `<span class="error-reason-tag">${errorReasonLabel(n.errorReason)}</span>` : '';
+    const dueTag = n.isDueForRetry ? `<span class="retry-badge">🔄 ${t('dueForRetry')}</span>` : '';
+    const preview = n.note ? `<div class="note-preview">${esc(n.note)}</div>` : '';
+
+    return `<div class="note-row" onclick="openNoteModal(${n.problemId})">
+      <span class="note-icon">${icon}</span>
+      <div class="note-info">
+        <div class="note-title">#${n.problemNumber} ${esc(title)}</div>
+        <div class="note-meta">
+          <span class="difficulty-badge ${diffClass}" style="font-size:.72rem;padding:.05rem .35rem">${n.difficulty}</span>
+          ${n.category ? `<span>${esc(n.category)}</span>` : ''}
+          ${errTag} ${dueTag}
+        </div>
+        ${preview}
+      </div>
+      <div class="note-actions">
+        ${n.isDueForRetry ? `<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();goRetry(${n.problemId})" style="font-size:.75rem">${t('retryNow')}</button>` : ''}
+        <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();openNoteModal(${n.problemId})" style="font-size:.75rem;padding:.2rem .4rem">✏️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function goRetry(problemId) {
+  // Navigate to practice page and open the problem
+  openProblem(problemId);
+  showView('practice-view');
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.view === 'practice-view'));
+}
+
+// ── Quick Note Buttons (in practice header) ─────────────────
+function updateQuickNoteButtons() {
+  if (!currentProblem) return;
+  const starBtn = document.getElementById('btn-star');
+  const todoBtn = document.getElementById('btn-todo');
+  const noteBtn = document.getElementById('btn-note');
+
+  // Star — independent
+  starBtn.className = 'quick-note-btn';
+  if (currentProblem.starred) {
+    starBtn.classList.add('active-star');
+    starBtn.textContent = '★';
+  } else {
+    starBtn.textContent = '☆';
+  }
+
+  // Todo
+  todoBtn.className = 'quick-note-btn';
+  if (currentProblem.bookmarkType === 'TODO') {
+    todoBtn.classList.add('active-todo');
+  }
+
+  // Wrong note
+  noteBtn.className = 'quick-note-btn';
+  if (currentProblem.bookmarkType === 'WRONG') {
+    noteBtn.classList.add('active-wrong');
+  }
+}
+
+async function toggleQuickNote(type) {
+  if (!currentProblem) return;
+  const problemId = currentProblem.id;
+
+  try {
+    if (type === 'STARRED') {
+      const res = await apiFetch(`/practice/notebook/${problemId}/toggle-star`, { method: 'POST' });
+      currentProblem.starred = res.starred;
+      showToast(res.starred ? t('noteAdded') : t('noteDeleted'));
+    } else if (type === 'TODO') {
+      const res = await apiFetch(`/practice/notebook/${problemId}/toggle-todo`, { method: 'POST' });
+      currentProblem.bookmarkType = res.todo ? 'TODO' : null;
+      showToast(res.todo ? t('noteAdded') : t('noteDeleted'));
+    }
+    updateQuickNoteButtons();
+  } catch (e) {
+    showToast(t('error') + ': ' + e.message);
+  }
+}
+
+// ── Note Modal (错题笔记专用) ────────────────────────────────
+function openNoteModal(problemId, presetReason) {
+  if (!problemId) return;
+  document.getElementById('note-problem-id').value = problemId;
+
+  // Use currentProblem as source of truth (not stale allNotes)
+  const isEditing = currentProblem && currentProblem.id === problemId && currentProblem.bookmarkType === 'WRONG';
+
+  if (isEditing) {
+    // Editing existing wrong note — fetch current data
+    document.getElementById('note-modal-title').textContent = t('editNote');
+    document.getElementById('note-delete-btn').style.display = '';
+    // Load existing note data from allNotes if available, else leave blank
+    const existing = allNotes.find(n => n.problemId === problemId);
+    document.getElementById('note-error-reason').value = existing?.errorReason || presetReason || '';
+    document.getElementById('note-text').value = existing?.note || '';
+  } else {
+    document.getElementById('note-modal-title').textContent = t('addToWrong');
+    document.getElementById('note-delete-btn').style.display = 'none';
+    document.getElementById('note-error-reason').value = presetReason || '';
+    document.getElementById('note-text').value = '';
+  }
+
+  document.getElementById('note-modal').classList.remove('hidden');
+}
+
+function closeNoteModal() {
+  document.getElementById('note-modal').classList.add('hidden');
+}
+
+async function saveNote() {
+  const problemId = parseInt(document.getElementById('note-problem-id').value);
+  const note = document.getElementById('note-text').value.trim();
+  const errorReason = document.getElementById('note-error-reason').value;
+
+  try {
+    await apiFetch(`/practice/notebook/${problemId}/wrong`, {
+      method: 'POST',
+      body: JSON.stringify({ note, errorReason }),
+    });
+    showToast(t('noteAdded'));
+
+    if (currentProblem && currentProblem.id === problemId) {
+      currentProblem.bookmarkType = 'WRONG';
+      updateQuickNoteButtons();
+    }
+
+    closeNoteModal();
+    if (document.getElementById('notebook-view').classList.contains('active')) loadNotebook();
+  } catch (e) {
+    showToast(t('error') + ': ' + e.message);
+  }
+}
+
+async function deleteNoteConfirm() {
+  const problemId = parseInt(document.getElementById('note-problem-id').value);
+
+  try {
+    await apiFetch(`/practice/notebook/${problemId}/wrong`, { method: 'DELETE' });
+    showToast(t('noteDeleted'));
+
+    if (currentProblem && currentProblem.id === problemId) {
+      currentProblem.bookmarkType = null;
+      updateQuickNoteButtons();
+    }
+
+    closeNoteModal();
+    if (document.getElementById('notebook-view').classList.contains('active')) loadNotebook();
+  } catch (e) {
+    showToast(t('error') + ': ' + e.message);
+  }
+}
+
+// ── AI Weakness Analysis ────────────────────────────────────
+async function runWeaknessAnalysis() {
+  const panel = document.getElementById('weakness-panel');
+  const statsEl = document.getElementById('weakness-stats');
+  const aiTextEl = document.getElementById('weakness-ai-text');
+
+  panel.style.display = '';
+  statsEl.innerHTML = `<p style="color:var(--muted)">${t('analyzingWeakness')}</p>`;
+  aiTextEl.textContent = '';
+
+  try {
+    const data = await apiFetch('/practice/notebook/ai-analysis', { method: 'POST' });
+
+    if (data.totalWrong === 0) {
+      statsEl.innerHTML = `<p style="color:var(--muted)">${t('noWrongNotes')}</p>`;
+      return;
+    }
+
+    const errorReasonLabel = (r) => {
+      const map = { LOGIC_ERROR: t('errorLogic'), EDGE_CASE: t('errorEdge'), TLE_APPROACH: t('errorTLE'), SYNTAX: t('errorSyntax'), DATA_STRUCTURE: t('errorDS'), ALGORITHM: t('errorAlgo'), OTHER: t('errorOther') };
+      return map[r] || r;
+    };
+
+    let html = '<div class="weakness-stat-group"><h4>' + t('errorReasonLabel') + '</h4>';
+    for (const [k, v] of Object.entries(data.errorReasonCounts || {})) {
+      html += `<div class="weakness-stat-item"><span>${errorReasonLabel(k)}</span><strong>${v}</strong></div>`;
+    }
+    html += '</div><div class="weakness-stat-group"><h4>' + t('allCategories') + '</h4>';
+    for (const [k, v] of Object.entries(data.categoryCounts || {})) {
+      html += `<div class="weakness-stat-item"><span>${esc(k)}</span><strong>${v}</strong></div>`;
+    }
+    html += '</div>';
+    statsEl.innerHTML = html;
+
+    aiTextEl.textContent = data.aiAnalysis || '';
+  } catch (e) {
+    statsEl.innerHTML = `<p style="color:var(--muted)">${t('error')}: ${esc(e.message)}</p>`;
   }
 }

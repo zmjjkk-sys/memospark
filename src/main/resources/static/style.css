@@ -880,6 +880,165 @@ main {
   #practice-view { width: auto; margin-left: 0; }
 }
 
+/* ── Problem Filters ──────────────────────────────────── */
+.problem-filters {
+  display: flex;
+  gap: .75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.problem-search-input {
+  flex: 1;
+  min-width: 180px;
+  padding: .5rem .75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: .85rem;
+  background: var(--surface);
+  outline: none;
+}
+.problem-search-input:focus { border-color: var(--primary); }
+
+.filter-btn-group {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.filter-btn {
+  padding: .4rem .75rem;
+  font-size: .78rem;
+  font-weight: 600;
+  border: none;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.filter-btn:not(:last-child) { border-right: 1px solid var(--border); }
+.filter-btn.active { background: var(--primary); color: #fff; }
+.filter-btn.filter-easy.active   { background: #15803d; }
+.filter-btn.filter-medium.active { background: #b45309; }
+.filter-btn.filter-hard.active   { background: #dc2626; }
+
+.category-select {
+  padding: .45rem .6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: .82rem;
+  background: var(--surface);
+  cursor: pointer;
+  outline: none;
+  min-width: 140px;
+}
+.category-select:focus { border-color: var(--primary); }
+
+.problem-progress {
+  font-size: .82rem;
+  color: var(--muted);
+  margin-bottom: .75rem;
+}
+
+/* ── Category Sections ───────────────────────────────── */
+.category-section {
+  margin-bottom: .75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .65rem 1rem;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 600;
+  font-size: .88rem;
+  transition: background .15s;
+  background: linear-gradient(135deg, rgba(79,70,229,.06), rgba(79,70,229,.02));
+}
+.category-header:hover { background: linear-gradient(135deg, rgba(79,70,229,.1), rgba(79,70,229,.04)); }
+
+.category-header .cat-left {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.category-header .cat-arrow {
+  transition: transform .2s;
+  font-size: .7rem;
+  color: var(--muted);
+}
+.category-header.collapsed .cat-arrow { transform: rotate(-90deg); }
+
+.category-header .cat-progress {
+  font-size: .75rem;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--surface);
+  padding: .15rem .5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+.category-body { }
+.category-body.collapsed { display: none; }
+
+/* ── Problem Row ─────────────────────────────────────── */
+.problem-row {
+  display: flex;
+  align-items: center;
+  padding: .55rem 1rem;
+  cursor: pointer;
+  font-size: .85rem;
+  border-top: 1px solid var(--border);
+  transition: background .12s;
+  gap: .6rem;
+}
+.problem-row:hover { background: rgba(79,70,229,.04); }
+
+.problem-row .status-icon {
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.status-done { color: #15803d; }
+.status-todo { color: var(--muted); opacity: .4; }
+
+.problem-row .prob-number {
+  color: var(--muted);
+  font-size: .78rem;
+  width: 42px;
+  flex-shrink: 0;
+}
+
+.problem-row .prob-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.problem-row .difficulty-badge {
+  flex-shrink: 0;
+}
+
+.problem-row .prob-admin-actions {
+  display: flex;
+  gap: .25rem;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.problem-row:hover .prob-admin-actions { opacity: 1; }
+
+/* Keep old styles for compatibility */
 .problem-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -931,6 +1090,36 @@ main {
   font-size: .78rem;
   color: var(--muted);
   margin-top: .5rem;
+}
+
+/* ── TLE Analysis ────────────────────────────────────── */
+.tle-analysis-btn {
+  margin-top: .5rem;
+  background: #fbbf24;
+  color: #78350f;
+  border: none;
+  padding: .4rem .8rem;
+  border-radius: 8px;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tle-analysis-btn:hover { background: #f59e0b; }
+
+.tle-analysis-result {
+  margin-top: .5rem;
+  padding: .75rem;
+  background: #fffbeb;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  font-size: .82rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+[data-theme="dark"] .tle-analysis-result {
+  background: #451a03;
+  border-color: #92400e;
+  color: #fef3c7;
 }
 
 /* Practice Detail Layout */
@@ -1053,3 +1242,125 @@ main {
   .practice-desc-panel { max-height: none; }
   .monaco-container { min-height: 300px; }
 }
+
+/* ─── Notebook ─────────────────────────────────────────── */
+.notebook-summary {
+  display: flex; gap: .75rem; flex-wrap: wrap; margin-bottom: 1rem;
+}
+.nb-badge {
+  display: flex; align-items: center; gap: .35rem;
+  padding: .35rem .75rem; border-radius: 20px; font-size: .85rem; font-weight: 500;
+  background: var(--surface); border: 1px solid var(--border);
+}
+.nb-badge .nb-count {
+  font-weight: 700; font-size: .95rem;
+}
+
+.notebook-filters {
+  display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem;
+}
+
+.note-row {
+  display: flex; align-items: center; gap: .75rem; padding: .65rem .75rem;
+  border-bottom: 1px solid var(--border); cursor: pointer; transition: background .15s;
+}
+.note-row:hover { background: rgba(79,70,229,.05); }
+.note-row .note-icon { font-size: 1.1rem; flex-shrink: 0; }
+.note-row .note-info { flex: 1; min-width: 0; }
+.note-row .note-title { font-weight: 500; font-size: .9rem; }
+.note-row .note-meta { font-size: .78rem; color: var(--muted); margin-top: .15rem; display: flex; gap: .5rem; flex-wrap: wrap; }
+.note-row .note-preview { font-size: .78rem; color: var(--muted); margin-top: .2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 500px; }
+.note-row .note-actions { display: flex; gap: .35rem; flex-shrink: 0; }
+
+.error-reason-tag {
+  display: inline-block; padding: .1rem .4rem; border-radius: 4px; font-size: .72rem; font-weight: 500;
+  background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;
+}
+[data-theme="dark"] .error-reason-tag { background: #450a0a; color: #fca5a5; border-color: #7f1d1d; }
+
+.retry-badge {
+  display: inline-flex; align-items: center; gap: .2rem;
+  padding: .1rem .4rem; border-radius: 10px; font-size: .72rem; font-weight: 600;
+  background: #dc2626; color: #fff;
+}
+
+.bookmark-btn {
+  background: none; border: none; cursor: pointer; font-size: 1rem; padding: .15rem .25rem;
+  opacity: .4; transition: opacity .15s;
+}
+.bookmark-btn:hover, .bookmark-btn.active { opacity: 1; }
+
+.prob-bookmark-tag { font-size: .85rem; flex-shrink: 0; }
+.status-fail { color: #dc2626; }
+
+.note-type-group {
+  display: flex; gap: .5rem;
+}
+.note-type-btn {
+  flex: 1; padding: .5rem; border: 2px solid var(--border); border-radius: 8px;
+  background: var(--surface); cursor: pointer; font-size: .85rem; text-align: center;
+  transition: border-color .15s, background .15s;
+}
+.note-type-btn:hover { border-color: var(--primary); }
+.note-type-btn.active { border-color: var(--primary); background: rgba(79,70,229,.1); }
+
+.weakness-panel {
+  margin-top: 1.5rem; padding: 1.25rem; border-radius: var(--radius);
+  background: #fefce8; border: 1px solid #fde68a;
+}
+[data-theme="dark"] .weakness-panel { background: #422006; border-color: #78350f; }
+.weakness-panel h3 { font-size: 1rem; margin-bottom: .75rem; }
+.weakness-stats {
+  display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: .75rem;
+}
+.weakness-stat-group h4 { font-size: .82rem; color: var(--muted); margin-bottom: .35rem; }
+.weakness-stat-item {
+  display: flex; justify-content: space-between; gap: 1rem; font-size: .82rem; padding: .15rem 0;
+}
+.weakness-ai-text {
+  font-size: .85rem; line-height: 1.5; white-space: pre-wrap; margin-top: .5rem;
+  padding-top: .75rem; border-top: 1px solid var(--border);
+}
+
+.due-retry-box {
+  background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius);
+  padding: .75rem 1rem; margin-bottom: 1rem;
+}
+[data-theme="dark"] .due-retry-box { background: #450a0a; border-color: #7f1d1d; }
+.due-retry-box h3 { font-size: .9rem; margin-bottom: .5rem; color: #dc2626; }
+[data-theme="dark"] .due-retry-box h3 { color: #fca5a5; }
+.due-retry-item {
+  display: inline-flex; align-items: center; gap: .35rem;
+  padding: .3rem .6rem; margin: .2rem; border-radius: 6px; font-size: .82rem;
+  background: #fff; border: 1px solid #fecaca; cursor: pointer; transition: background .15s;
+}
+[data-theme="dark"] .due-retry-item { background: #1e293b; border-color: #7f1d1d; }
+.due-retry-item:hover { background: #fee2e2; }
+[data-theme="dark"] .due-retry-item:hover { background: #7f1d1d; }
+
+.fail-badge {
+  font-size: .68rem; color: #dc2626; font-weight: 500; margin-left: .15rem;
+}
+[data-theme="dark"] .fail-badge { color: #fca5a5; }
+
+.due-indicator {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: #dc2626; margin-left: .25rem; vertical-align: middle;
+}
+
+/* Quick note buttons in practice header */
+.quick-note-btn {
+  background: none; border: 2px solid var(--border); border-radius: 8px;
+  cursor: pointer; font-size: 1.15rem; padding: .25rem .5rem;
+  opacity: .5; transition: all .2s; line-height: 1;
+}
+.quick-note-btn:hover { opacity: .8; border-color: var(--muted); }
+.quick-note-btn.active {
+  opacity: 1; border-color: var(--primary); background: rgba(79,70,229,.08);
+}
+.quick-note-btn.active-star { opacity: 1; border-color: #f59e0b; background: #fefce8; }
+[data-theme="dark"] .quick-note-btn.active-star { background: #422006; border-color: #f59e0b; }
+.quick-note-btn.active-todo { opacity: 1; border-color: #3b82f6; background: #eff6ff; }
+[data-theme="dark"] .quick-note-btn.active-todo { background: #1e3a5f; border-color: #3b82f6; }
+.quick-note-btn.active-wrong { opacity: 1; border-color: #ef4444; background: #fef2f2; }
+[data-theme="dark"] .quick-note-btn.active-wrong { background: #450a0a; border-color: #ef4444; }

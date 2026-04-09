@@ -40,7 +40,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/login.html", "/style.css", "/app.js", "/i18n-builtin.js").permitAll()
+                .requestMatchers("/login.html", "/style.css", "/app.js", "/i18n-builtin.js", "/i18n-problems.js").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/practice/problems").hasRole("ADMIN")
                 .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/practice/problems/*").hasRole("ADMIN")

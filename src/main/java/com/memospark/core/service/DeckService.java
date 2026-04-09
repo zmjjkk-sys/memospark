@@ -55,8 +55,8 @@ public class DeckService {
         Deck deck = getDeckOrThrow(id);
         if (req.name() != null) deck.setName(req.name());
         if (req.description() != null) deck.setDescription(req.description());
-        deck.setDailyReviewLimit(req.dailyReviewLimit());
-        deck.setDailyNewCardLimit(req.dailyNewCardLimit());
+        if (req.dailyReviewLimit() != null) deck.setDailyReviewLimit(req.dailyReviewLimit());
+        if (req.dailyNewCardLimit() != null) deck.setDailyNewCardLimit(req.dailyNewCardLimit());
         deck = deckRepository.save(deck);
         return toSummary(deck, LocalDate.now());
     }

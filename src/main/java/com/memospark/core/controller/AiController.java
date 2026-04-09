@@ -19,6 +19,7 @@ public class AiController {
     public record HintRequest(String problemDescription, String userCode, int level) {}
     public record GenerateCardsRequest(String topic, int count, String language) {}
     public record GradeRequest(String question, String referenceAnswer, String userAnswer) {}
+    public record AnalyzeTLERequest(String problemDescription, String userCode, String language) {}
 
     @PostMapping("/hint")
     public Map<String, String> getHint(@RequestBody HintRequest req,
@@ -31,6 +32,13 @@ public class AiController {
     public Map<String, Object> gradeAnswer(@RequestBody GradeRequest req,
                                             @AuthenticationPrincipal UserDetails userDetails) {
         return aiService.gradeAnswer(req.question(), req.referenceAnswer(), req.userAnswer());
+    }
+
+    @PostMapping("/analyze-tle")
+    public Map<String, String> analyzeTLE(@RequestBody AnalyzeTLERequest req,
+                                           @AuthenticationPrincipal UserDetails userDetails) {
+        String analysis = aiService.analyzeTLE(req.problemDescription(), req.userCode(), req.language());
+        return Map.of("analysis", analysis);
     }
 
     @PostMapping("/generate-cards")
